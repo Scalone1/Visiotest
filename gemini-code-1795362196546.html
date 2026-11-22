@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Ottotipo Clinico" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Ottotipo Clinico Digitale — Test Visivo</title>
+
+  <link id="apple-touch-icon" rel="apple-touch-icon" />
+  <link id="dynamic-manifest" rel="manifest" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-clinical: #ffffff;
+      --ink-clinical: #0a0a0a;
+    }
+
+    html, body {
+      background-color: var(--bg-clinical);
+      color: var(--ink-clinical);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body.clean-mode-active {
+      touch-action: manipulation;
+      overscroll-behavior: none;
+    }
+
+    body.clean-mode-active .operator-chrome {
+      display: none !important;
+    }
+
+    body.clean-mode-active #clean-exit-btn {
+      display: flex !important;
+    }
+
+    body.clean-mode-active #chart-stage {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    #clean-exit-btn {
+      display: none;
+    }
+
+    .optotype-svg {
+      display: block;
+      shape-rendering: geometricPrecision;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    input[type="range"] {
+      accent-color: #0f172a;
+    }
+
+    @media print {
+      .operator-chrome, #clean-exit-btn, #camera-badge {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-neutral-950 selection:bg-neutral-200">
+
+  <!-- Indicatore distanza sempre discreto in alto a destra -->
+  <div id="camera-badge" class="fixed top-3 right-3 z-40 flex flex-col items-end gap-1.5 select-none">
+    <div class="flex items-center gap-2 rounded-full border border-neutral-200 bg-white/95 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+      <span id="distance-dot" class="h-2.5 w-2.5 rounded-full bg-neutral-300 transition-colors"></span>
+      <span id="distance-label" class="text-xs font-medium tracking-tight text-neutral-600 tabular-nums">
+        Distanza: -- cm
+      </span>
+      <span id="distance-zone-tag" class="hidden rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"></span>
+      <button
+        id="quick-manual-toggle"
+        type="button"
+        title="Regola distanza manualmente"
+        class="operator-chrome ml-0.5 rounded-md border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-100"
+      >
+        ± cm
+      </button>
+    </div>
+
+    <!-- Controllo rapido manuale distanza -->
+    <div id="quick-manual-popover" class="operator-chrome hidden w-64 rounded-xl border border-neutral-200 bg-white/98 p-3 shadow-lg backdrop-blur">
+      <div class="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-neutral-700">
+        <span>Distanza manuale</span>
+        <span id="quick-manual-val" class="tabular-nums text-neutral-900">40 cm</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="quick-dist-minus" type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-300 bg-neutral-50 text-xs font-bold text-neutral-700 active:bg-neutral-200">-5</button>
+        <input id="quick-dist-slider" type="range" min="25" max="120" step="1" value="40" class="w-full cursor-pointer" />
+        <button id="quick-dist-plus" type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-300 bg-neutral-50 text-xs font-bold text-neutral-700 active:bg-neutral-200">+5</button>
+      </div>
+      <p class="mt-1.5 text-[10px] leading-tight text-neutral-500">
+        Usa questo cursore se la fotocamera non è attiva o in condizioni di scarsa luce.
+      </p>
+    </div>
+  </div>
+
+  <!-- Pulsante discreto per uscire dalla Modalità Pulita -->
+  <button
+    id="clean-exit-btn"
+    type="button"
+    title="Mostra barra operatore"
+    class="fixed bottom-4 right-4 z-50 min-h-[44px] items-center gap-1.5 rounded-full border border-neutral-200 bg-white/90 px-4 py-2 text-xs font-medium text-neutral-500 shadow-sm backdrop-blur hover:border-neutral-400 hover:text-neutral-900 transition"
+  >
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+    <span>Mostra Controlli</span>
+  </button>
+
+  <!-- Barra Operatore -->
+  <header class="operator-chrome sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 pr-44 sm:pr-52">
+      <!-- Titolo + Selettore Test -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <div class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-950 text-xs font-bold tracking-wider text-white">
+            E
+          </div>
+          <div>
+            <h1 class="text-sm font-semibold leading-tight text-neutral-900">Ottotipo Clinico</h1>
+            <p class="text-[11px] text-neutral-500">Lettura passiva • Standalone</p>
+          </div>
+        </div>
+
+        <nav aria-label="Tipo di test visivo" class="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1">
+          <button
+            type="button"
+            data-tab="optotype"
+            class="tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition bg-neutral-950 text-white shadow-xs"
+          >
+            Ottotipo Sloan
+          </button>
+          <button
+            type="button"
+            data-tab="ishihara"
+            class="tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950"
+          >
+            Ishihara
+          </button>
+          <button
+            type="button"
+            data-tab="redgreen"
+            class="tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950"
+          >
+            Rosso / Verde
+          </button>
+          <button
+            type="button"
+            data-tab="pellirobson"
+            class="tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950"
+          >
+            Pelli-Robson
+          </button>
+        </nav>
+      </div>
+
+      <!-- Controlli Globale Operatore -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Selettore Distanza Clinica -->
+        <div class="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5" role="group" aria-label="Distanza del test">
+          <button
+            id="btn-mode-near"
+            type="button"
+            class="min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition bg-neutral-950 text-white shadow-xs"
+          >
+            Vicino (40 cm)
+          </button>
+          <button
+            id="btn-mode-inter"
+            type="button"
+            class="min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950"
+          >
+            Intermedia (70 cm)
+          </button>
+        </div>
+
+        <!-- Fotocamera -->
+        <button
+          id="btn-camera-toggle"
+          type="button"
+          class="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 transition"
+        >
+          <svg class="h-4 w-4 text-neutral-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span id="camera-btn-text">Attiva Camera</span>
+        </button>
+
+        <!-- Calibrazione -->
+        <button
+          id="btn-calibrate-toggle"
+          type="button"
+          class="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 transition"
+        >
+          <svg class="h-4 w-4 text-neutral-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          <span>Calibra</span>
+        </button>
+
+        <!-- Modalità Pulita -->
+        <button
+          id="btn-clean-mode"
+          type="button"
+          class="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-neutral-900 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 active:bg-neutral-950 transition"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+          </svg>
+          <span>Modalità Pulita</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sotto-barra contestuale per il test selezionato -->
+    <div id="contextual-toolbar" class="border-t border-neutral-100 bg-neutral-50/90 px-4 py-2">
+      <!-- Controlli Ottotipo -->
+      <div id="subbar-optotype" class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-medium text-neutral-500">Set ottotipi:</span>
+          <div class="inline-flex rounded-md border border-neutral-200 bg-white p-0.5">
+            <button type="button" data-charset="sloan" class="charset-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white">Lettere Sloan</button>
+            <button type="button" data-charset="tumbling" class="charset-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950">E di Albini</button>
+            <button type="button" data-charset="numbers" class="charset-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950">Numeri</button>
+          </div>
+        </div>
+        <button id="btn-regenerate-optotype" type="button" class="inline-flex min-h-[34px] items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-800 hover:bg-neutral-50">
+          <svg class="h-3.5 w-3.5 text-neutral-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Rigenera Lettere</span>
+        </button>
+      </div>
+
+      <!-- Controlli Ishihara -->
+      <div id="subbar-ishihara" class="mx-auto hidden max-w-6xl flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="ishihara-prev" type="button" class="min-h-[36px] rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-800 hover:bg-neutral-50">
+            ← Precedente
+          </button>
+          <span id="ishihara-counter" class="min-w-[100px] text-center font-semibold text-neutral-800 tabular-nums">
+            Tavola 1 / 10
+          </span>
+          <button id="ishihara-next" type="button" class="min-h-[36px] rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-800 hover:bg-neutral-50">
+            Successiva →
+          </button>
+          <button id="ishihara-reshuffle" type="button" class="min-h-[36px] rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-700 hover:bg-neutral-50">
+            Nuovo pattern
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="inline-flex min-h-[36px] cursor-pointer items-center gap-1.5 text-neutral-700 select-none">
+            <input id="ishihara-show-key" type="checkbox" checked class="h-4 w-4 rounded border-neutral-300 text-neutral-900" />
+            <span>Mostra soluzione operatore</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Controlli Rosso/Verde -->
+      <div id="subbar-redgreen" class="mx-auto hidden max-w-6xl flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-medium text-neutral-500">Modalità campo:</span>
+          <div class="inline-flex rounded-md border border-neutral-200 bg-white p-0.5">
+            <button type="button" data-rgmode="split" class="rg-mode-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white">Diviso (R | V)</button>
+            <button type="button" data-rgmode="red" class="rg-mode-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950">Solo Rosso</button>
+            <button type="button" data-rgmode="green" class="rg-mode-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950">Solo Verde</button>
+          </div>
+          <span class="ml-1 font-medium text-neutral-500">Acuità righe:</span>
+          <select id="rg-acuity-select" class="min-h-[34px] rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800">
+            <option value="standard" selected>Scala 5/10 – 8/10 (Standard)</option>
+            <option value="low">Scala 2/10 – 4/10 (Bassa acuità)</option>
+            <option value="high">Scala 8/10 – 10/10 (Fine)</option>
+          </select>
+        </div>
+        <button id="rg-regenerate" type="button" class="min-h-[34px] rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-800 hover:bg-neutral-50">
+          Rigenera Lettere
+        </button>
+      </div>
+
+      <!-- Controlli Pelli-Robson -->
+      <div id="subbar-pellirobson" class="mx-auto hidden max-w-6xl flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-medium text-neutral-500">Stimolo:</span>
+          <div class="inline-flex rounded-md border border-neutral-200 bg-white p-0.5">
+            <button type="button" data-prtype="letters" class="pr-type-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white">Triplette Lettere (LogCS)</button>
+            <button type="button" data-prtype="gratings" class="pr-type-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950">Reticoli Sinusoidali</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="pr-regenerate" type="button" class="min-h-[34px] rounded-md border border-neutral-300 bg-white px-3 py-1 font-medium text-neutral-800 hover:bg-neutral-50">
+            Rigenera Sequenza
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pannello Calibrazione + Telecamera (Collassabile) -->
+    <div id="calibration-drawer" class="hidden border-t border-neutral-200 bg-neutral-50 px-4 py-4">
+      <div class="mx-auto grid max-w-5xl gap-5 md:grid-cols-2">
+        <!-- Calibrazione fisica schermo -->
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-neutral-700">1. Calibrazione Dimensione Schermo</h2>
+            <span id="px-per-mm-readout" class="text-xs font-mono text-neutral-500">3.78 px/mm</span>
+          </div>
+          <p class="mt-1 text-xs text-neutral-600 leading-relaxed">
+            Appoggia una tessera standard (bancomat / tessera sanitaria, larghezza <strong>85.6 mm</strong>) sul riquadro qui sotto e regola il cursore finché i bordi non coincidono.
+          </p>
+
+          <div class="mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 py-3">
+            <div
+              id="credit-card-ref"
+              style="width: 323.5px; height: 54px;"
+              class="flex items-center justify-between rounded-md border-2 border-neutral-900 bg-white px-3 text-[11px] font-medium text-neutral-700 shadow-xs transition-none"
+            >
+              <span>◀ Bordo sx</span>
+              <span class="font-mono text-neutral-950 font-semibold">85.6 mm</span>
+              <span>Bordo dx ▶</span>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center gap-3">
+            <input
+              id="calibration-slider"
+              type="range"
+              min="2.2"
+              max="7.5"
+              step="0.02"
+              value="3.78"
+              class="w-full cursor-pointer accent-neutral-900"
+            />
+            <button
+              id="btn-reset-calibration"
+              type="button"
+              class="shrink-0 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs text-neutral-600 hover:bg-neutral-100"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Anteprima e taratura fotocamera -->
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-neutral-700">2. Telemetria Distanza (Camera)</h2>
+            <span id="camera-engine-status" class="text-[11px] font-medium text-neutral-500">Spenta</span>
+          </div>
+          <p class="mt-1 text-xs text-neutral-600 leading-relaxed">
+            Inquadra il volto del paziente. Quando è nel range ottimale (<strong>35–45 cm</strong> Vicino, <strong>60–80 cm</strong> Intermedia), l'indicatore diventa verde.
+          </p>
+
+          <div class="mt-3 flex items-center gap-3">
+            <div class="relative h-24 w-32 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-900">
+              <video id="webcam-video" autoplay playsinline muted class="h-full w-full -scale-x-100 object-cover"></video>
+              <canvas id="face-overlay-canvas" class="pointer-events-none absolute inset-0 h-full w-full -scale-x-100"></canvas>
+              <div id="video-placeholder" class="absolute inset-0 flex items-center justify-center p-2 text-center text-[10px] text-neutral-400">
+                Camera non attiva
+              </div>
+            </div>
+
+            <div class="flex-1 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-neutral-600">Taratura focale:</span>
+                <span id="focal-factor-val" class="font-mono font-medium">1.00×</span>
+              </div>
+              <input
+                id="focal-slider"
+                type="range"
+                min="0.65"
+                max="1.45"
+                step="0.01"
+                value="1.00"
+                class="w-full cursor-pointer accent-neutral-900"
+              />
+              <button
+                id="btn-snap-reference"
+                type="button"
+                class="w-full rounded-md border border-neutral-300 bg-neutral-50 px-2.5 py-1.5 text-[11px] font-medium text-neutral-800 hover:bg-neutral-100"
+              >
+                Calibra ora su distanza target
+              </button>
+            </div>
+          </div>
+
+          <!-- Avviso diagnostico fotocamera -->
+          <div id="camera-diagnostic-box" class="mt-2.5 hidden rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-snug text-amber-900"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Area Principale Tavole Visive (Non interattiva per il paziente) -->
+  <main id="chart-stage" class="mx-auto flex max-w-5xl flex-col items-center justify-center px-4 py-8 sm:px-8 sm:py-10">
+    <!-- Intestazione clinica stampabile / discreta -->
+    <div id="chart-header-meta" class="mb-6 flex w-full max-w-3xl items-baseline justify-between border-b border-neutral-200 pb-2 text-xs text-neutral-500">
+      <span id="chart-title-label" class="font-semibold uppercase tracking-widest text-neutral-800">Ottotipo Sloan — Distanza Vicina (40 cm)</span>
+      <span id="chart-subtitle-label" class="tabular-nums">Scala Decimale 1/10 – 10/10 • 5 primi d'arco</span>
+    </div>
+
+    <!-- 1. SEZIONE OTTOTIPO SLOAN -->
+    <section id="view-optotype" class="w-full max-w-3xl" aria-label="Tavola ottotipica">
+      <div id="optotype-rows-container" class="flex flex-col items-center"></div>
+    </section>
+
+    <!-- 2. SEZIONE TAVOLE DI ISHIHARA -->
+    <section id="view-ishihara" class="hidden w-full max-w-3xl flex-col items-center" aria-label="Tavole di Ishihara">
+      <div class="flex flex-col items-center justify-center py-2">
+        <div class="relative flex items-center justify-center rounded-full border border-neutral-100 bg-white p-3 shadow-2xs">
+          <canvas id="ishihara-canvas" width="440" height="440" class="h-[320px] w-[320px] sm:h-[400px] sm:w-[400px] rounded-full"></canvas>
+        </div>
+
+        <!-- Scheda informativa riservata all'operatore -->
+        <div id="ishihara-operator-card" class="operator-chrome mt-6 w-full max-w-md rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs">
+          <div class="flex items-center justify-between">
+            <span id="ishihara-plate-title" class="font-semibold text-neutral-900">Tavola 1 — Dimostrativa</span>
+            <span id="ishihara-plate-answer" class="rounded-md bg-neutral-900 px-2.5 py-0.5 font-mono text-sm font-bold text-white">12</span>
+          </div>
+          <p id="ishihara-plate-notes" class="mt-1.5 text-neutral-600 leading-relaxed">
+            Visibile a tutti i soggetti (visione normale e deficit rosso-verde). Utile per verificare la comprensione del test.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SEZIONE TEST BICROMATICO ROSSO / VERDE -->
+    <section id="view-redgreen" class="hidden w-full max-w-4xl flex-col items-center" aria-label="Test bicromatico rosso verde">
+      <div id="redgreen-board" class="grid w-full overflow-hidden rounded-2xl border border-neutral-300 shadow-xs grid-cols-1 md:grid-cols-2">
+        <!-- Campo Rosso (620-650 nm approx sRGB) -->
+        <div id="rg-panel-red" style="background-color: #d92626;" class="flex flex-col items-center justify-center px-6 py-10 text-neutral-950">
+          <div id="rg-red-rows" class="flex flex-col items-center gap-6"></div>
+        </div>
+        <!-- Campo Verde (520-540 nm approx sRGB) -->
+        <div id="rg-panel-green" style="background-color: #1fa847;" class="flex flex-col items-center justify-center px-6 py-10 text-neutral-950">
+          <div id="rg-green-rows" class="flex flex-col items-center gap-6"></div>
+        </div>
+      </div>
+
+      <div class="operator-chrome mt-5 w-full max-w-3xl rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+        <strong class="text-neutral-900">Guida rapida operatore:</strong> Chiedere al paziente su quale sfondo (rosso o verde) i caratteri appaiono più nitidi e neri.
+        <span class="block mt-1">• Più nitidi sul <strong>Rosso</strong> → tendenza miopica / ipercorrezione positiva. • Più nitidi sul <strong>Verde</strong> → tendenza ipermetropica / sottocorrezione. • Uguali → equilibrio rifrattivo.</span>
+      </div>
+    </section>
+
+    <!-- 4. SEZIONE PELLI-ROBSON (SENSIBILITÀ AL CONTRASTO) -->
+    <section id="view-pellirobson" class="hidden w-full max-w-3xl flex-col items-center" aria-label="Test sensibilità al contrasto Pelli-Robson">
+      <div id="pellirobson-container" class="flex w-full flex-col items-center gap-4"></div>
+
+      <div class="operator-chrome mt-6 w-full max-w-3xl rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-600">
+        <strong class="text-neutral-900">Annotazione Pelli-Robson:</strong> Ogni riga presenta due triplette a contrasto decrescente (step di 0.15 unità LogCS). Registrare l'ultima tripletta in cui il paziente legge correttamente almeno <strong>2 lettere su 3</strong>.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 0. PWA STANDALONE & OFFLINE SETUP (Manifest + Icona + Service Worker)
+    // =========================================================================
+    (function setupStandalonePWA() {
+      try {
+        const iconCanvas = document.createElement('canvas');
+        iconCanvas.width = 512;
+        iconCanvas.height = 512;
+        const ictx = iconCanvas.getContext('2d');
+        ictx.fillStyle = '#0a0a0a';
+        ictx.fillRect(0, 0, 512, 512);
+        ictx.fillStyle = '#ffffff';
+        const u = 64;
+        const ox = 96;
+        const oy = 96;
+        ictx.fillRect(ox, oy, 5 * u, u);
+        ictx.fillRect(ox, oy + 2 * u, 4 * u, u);
+        ictx.fillRect(ox, oy + 4 * u, 5 * u, u);
+        ictx.fillRect(ox, oy, u, 5 * u);
+
+        const iconDataUrl = iconCanvas.toDataURL('image/png');
+        const appleIconLink = document.getElementById('apple-touch-icon');
+        if (appleIconLink) appleIconLink.href = iconDataUrl;
+
+        const manifestObj = {
+          name: 'Ottotipo Clinico Digitale',
+          short_name: 'Ottotipo',
+          description: 'Test visivo clinico standalone offline (Sloan, Ishihara, Rosso/Verde, Pelli-Robson)',
+          start_url: window.location.href,
+          display: 'standalone',
+          background_color: '#ffffff',
+          theme_color: '#ffffff',
+          icons: [
+            {
+              src: iconDataUrl,
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable'
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestLink = document.getElementById('dynamic-manifest');
+        if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
+      } catch (e) {
+        // Fallback silenzioso
+      }
+
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+        const swCode = `
+          const CACHE_NAME = 'ottotipo-clinico-v2';
+          self.addEventListener('install', (event) => {
+            self.skipWaiting();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => {
+                return cache.addAll([self.location.origin + self.location.pathname, 'https://cdn.tailwindcss.com']).catch(() => {});
+              })
+            );
+          });
+          self.addEventListener('activate', (event) => {
+            event.waitUntil(self.clients.claim());
+          });
+          self.addEventListener('fetch', (event) => {
+            if (event.request.method !== 'GET') return;
+            event.respondWith(
+              caches.match(event.request).then((cached) => {
+                const networkFetch = fetch(event.request).then((response) => {
+                  if (response && response.status === 200) {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                  }
+                  return response;
+                }).catch(() => cached);
+                return cached || networkFetch;
+              })
+            );
+          });
+        `;
+        try {
+          const swBlob = new Blob([swCode], { type: 'application/javascript' });
+          const swUrl = URL.createObjectURL(swBlob);
+          navigator.serviceWorker.register(swUrl).catch(() => {});
+        } catch (err) {
+          // Ignora in ambienti sandboxed
+        }
+      }
+    })();
+
+    // =========================================================================
+    // 1. MATRICI VETTORIALI 5x5 DEGLI OTTOTIPI DI SLOAN & SIMBOLI CLINICI
+    // =========================================================================
+    const GLYPHS = {
+      C: [
+        [0,1,1,1,0],
+        [1,0,0,0,1],
+        [1,0,0,0,0],
+        [1,0,0,0,1],
+        [0,1,1,1,0]
+      ],
+      D: [
+        [1,1,1,1,0],
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [1,1,1,1,0]
+      ],
+      E: [
+        [1,1,1,1,1],
+        [1,0,0,0,0],
+        [1,1,1,1,0],
+        [1,0,0,0,0],
+        [1,1,1,1,1]
+      ],
+      F: [
+        [1,1,1,1,1],
+        [1,0,0,0,0],
+        [1,1,1,1,0],
+        [1,0,0,0,0],
+        [1,0,0,0,0]
+      ],
+      H: [
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [1,1,1,1,1],
+        [1,0,0,0,1],
+        [1,0,0,0,1]
+      ],
+      K: [
+        [1,0,0,0,1],
+        [1,0,0,1,0],
+        [1,1,1,0,0],
+        [1,0,0,1,0],
+        [1,0,0,0,1]
+      ],
+      N: [
+        [1,0,0,0,1],
+        [1,1,0,0,1],
+        [1,0,1,0,1],
+        [1,0,0,1,1],
+        [1,0,0,0,1]
+      ],
+      O: [
+        [0,1,1,1,0],
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [0,1,1,1,0]
+      ],
+      P: [
+        [1,1,1,1,0],
+        [1,0,0,0,1],
+        [1,1,1,1,0],
+        [1,0,0,0,0],
+        [1,0,0,0,0]
+      ],
+      R: [
+        [1,1,1,1,0],
+        [1,0,0,0,1],
+        [1,1,1,1,0],
+        [1,0,0,1,0],
+        [1,0,0,0,1]
+      ],
+      S: [
+        [0,1,1,1,1],
+        [1,0,0,0,0],
+        [0,1,1,1,0],
+        [0,0,0,0,1],
+        [1,1,1,1,0]
+      ],
+      V: [
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [1,0,0,0,1],
+        [0,1,0,1,0],
+        [0,0,1,0,0]
+      ],
+      Z: [
+        [1,1,1,1,1],
+        [0,0,0,1,0],
+        [0,0,1,0,0],
+        [0,1,0,0,0],
+        [1,1,1,1,1]
+      ],
+      E_RIGHT: [
+        [1,1,1,1,1],
+        [1,0,0,0,0],
+        [1,1,1,1,0],
+        [1,0,0,0,0],
+        [1,1,1,1,1]
+      ],
+      E_LEFT: [
+        [1,1,1,1,1],
+        [0,0,0,0,1],
+        [0,1,1,1,1],
+        [0,0,0,0,1],
+        [1,1,1,1,1]
+      ],
+      E_UP: [
+        [1,0,1,0,1],
+        [1,0,1,0,1],
+        [1,0,1,0,1],
+        [1,0,1,0,1],
+        [1,1,1,1,1]
+      ],
+      E_DOWN: [
+        [1,1,1,1,1],
+        [1,0,1,0,1],
+        [1,0,1,0,1],
+        [1,0,1,0,1],
+        [1,0,1,0,1]
+      ],
+      '2': [
+        [1,1,1,1,0],
+        [0,0,0,0,1],
+        [0,1,1,1,0],
+        [1,0,0,0,0],
+        [1,1,1,1,1]
+      ],
+      '3': [
+        [1,1,1,1,0],
+        [0,0,0,0,1],
+        [0,1,1,1,0],
+        [0,0,0,0,1],
+        [1,1,1,1,0]
+      ],
+      '4': [
+        [1,0,0,1,0],
+        [1,0,0,1,0],
+        [1,1,1,1,1],
+        [0,0,0,1,0],
+        [0,0,0,1,0]
+      ],
+      '5': [
+        [1,1,1,1,1],
+        [1,0,0,0,0],
+        [1,1,1,1,0],
+        [0,0,0,0,1],
+        [1,1,1,1,0]
+      ],
+      '6': [
+        [0,1,1,1,0],
+        [1,0,0,0,0],
+        [1,1,1,1,0],
+        [1,0,0,0,1],
+        [0,1,1,1,0]
+      ],
+      '7': [
+        [1,1,1,1,1],
+        [0,0,0,0,1],
+        [0,0,0,1,0],
+        [0,0,1,0,0],
+        [0,0,1,0,0]
+      ],
+      '8': [
+        [0,1,1,1,0],
+        [1,0,0,0,1],
+        [0,1,1,1,0],
+        [1,0,0,0,1],
+        [0,1,1,1,0]
+      ],
+      '9': [
+        [0,1,1,1,0],
+        [1,0,0,0,1],
+        [0,1,1,1,1],
+        [0,0,0,0,1],
+        [0,1,1,1,0]
+      ]
+    };
+
+    const CHARSETS = {
+      sloan: ['C', 'D', 'H', 'K', 'N', 'O', 'R', 'S', 'V', 'Z'],
+      tumbling: ['E_RIGHT', 'E_LEFT', 'E_UP', 'E_DOWN'],
+      numbers: ['2', '3', '4', '5', '6', '7', '8', '9']
+    };
+
+    const ACUITY_LEVELS = [
+      { dec: 0.1, label: '1/10',  snellen: '20/200', count: 1 },
+      { dec: 0.2, label: '2/10',  snellen: '20/100', count: 2 },
+      { dec: 0.3, label: '3/10',  snellen: '20/63',  count: 3 },
+      { dec: 0.4, label: '4/10',  snellen: '20/50',  count: 4 },
+      { dec: 0.5, label: '5/10',  snellen: '20/40',  count: 5 },
+      { dec: 0.6, label: '6/10',  snellen: '20/32',  count: 5 },
+      { dec: 0.7, label: '7/10',  snellen: '20/28',  count: 5 },
+      { dec: 0.8, label: '8/10',  snellen: '20/25',  count: 6 },
+      { dec: 0.9, label: '9/10',  snellen: '20/22',  count: 6 },
+      { dec: 1.0, label: '10/10', snellen: '20/20',  count: 6 }
+    ];
+
+    const ISHIHARA_PLATES = [
+      {
+        id: 1,
+        number: '12',
+        title: 'Tavola 1 — Dimostrativa',
+        notes: 'Visibile a tutti i soggetti (visione normale e deficit rosso-verde). Utile per verificare la comprensione del test.',
+        fgColors: ['#d95f26', '#e37736', '#c84b1f', '#eb8f46'],
+        bgColors: ['#5f8c7a', '#76a18f', '#4e7767', '#8cb3a3', '#6b9484']
+      },
+      {
+        id: 2,
+        number: '8',
+        title: 'Tavola 2 — Trasformazione (8 / 3)',
+        notes: 'Visione normale legge 8. Soggetti con deficit rosso-verde tendono a leggere 3 o hanno difficoltà.',
+        fgColors: ['#c8563c', '#d96e52', '#b3432b', '#e08267'],
+        bgColors: ['#6e8f48', '#83a35b', '#5a7838', '#96b36f', '#779651']
+      },
+      {
+        id: 3,
+        number: '6',
+        title: 'Tavola 3 — Trasformazione (6 / 5)',
+        notes: 'Visione normale legge 6. Deficit rosso-verde legge 5 oppure non distingue chiaramente la cifra.',
+        fgColors: ['#699449', '#7ea85d', '#547d37', '#92ba72'],
+        bgColors: ['#c96342', '#db7a58', '#b04f30', '#e38f70', '#c25b3a']
+      },
+      {
+        id: 4,
+        number: '29',
+        title: 'Tavola 4 — Trasformazione (29 / 70)',
+        notes: 'Visione normale legge 29. Deficit rosso-verde legge 70.',
+        fgColors: ['#cf5c36', '#e0724c', '#b54824', '#e88866'],
+        bgColors: ['#648a52', '#799e66', '#507340', '#8eb07c', '#6c915a']
+      },
+      {
+        id: 5,
+        number: '57',
+        title: 'Tavola 5 — Trasformazione (57 / 35)',
+        notes: 'Visione normale legge 57. Deficit rosso-verde legge 35.',
+        fgColors: ['#5e8f56', '#74a36c', '#4a7843', '#89b582'],
+        bgColors: ['#cc603d', '#de7654', '#b34b29', '#e68c6c', '#c45835']
+      },
+      {
+        id: 6,
+        number: '5',
+        title: 'Tavola 6 — Scomparsa (5)',
+        notes: 'Visione normale legge 5. La maggior parte dei soggetti con deficit rosso-verde non vede alcun numero.',
+        fgColors: ['#c75b3e', '#d97155', '#ad472c', '#e3866d'],
+        bgColors: ['#6c8c58', '#80a06c', '#587546', '#94b280', '#739460']
+      },
+      {
+        id: 7,
+        number: '3',
+        title: 'Tavola 7 — Scomparsa (3)',
+        notes: 'Visione normale legge 3. Non percepita in caso di discromatopsia rosso-verde.',
+        fgColors: ['#628f4e', '#77a363', '#4e783c', '#8cb579'],
+        bgColors: ['#c95e3b', '#db7451', '#b04928', '#e38968', '#bf5534']
+      },
+      {
+        id: 8,
+        number: '15',
+        title: 'Tavola 8 — Scomparsa (15)',
+        notes: 'Visione normale legge 15. Difficile o invisibile nei deficit rosso-verde.',
+        fgColors: ['#cf623a', '#e07850', '#b54d28', '#e88d68'],
+        bgColors: ['#688c5c', '#7da070', '#547549', '#91b284', '#6f9463']
+      },
+      {
+        id: 9,
+        number: '74',
+        title: 'Tavola 9 — Scomparsa (74 / 21)',
+        notes: 'Visione normale legge 74. Alcuni soggetti con deficit rosso-verde leggono 21.',
+        fgColors: ['#638f52', '#78a367', '#4f7840', '#8db57c'],
+        bgColors: ['#c75c3e', '#d97254', '#ad482b', '#e3886b', '#bf5437']
+      },
+      {
+        id: 10,
+        number: '42',
+        title: 'Tavola 10 — Classificazione Protan / Deutan (42)',
+        notes: 'Visione normale legge 42. Nella protanopia si legge più nettamente il 2; nella deuteranopia il 4.',
+        fgColors: ['#d1584f', '#e07067', '#b54138', '#c96b82'],
+        bgColors: ['#6d877a', '#829c8f', '#597065', '#96afa3', '#748f82']
+      }
+    ];
+
+    const PELLI_ROBSON_LEVELS = [
+      { logCS: '0.30', contrastPct: 50.1 },
+      { logCS: '0.45', contrastPct: 35.5 },
+      { logCS: '0.60', contrastPct: 25.1 },
+      { logCS: '0.75', contrastPct: 17.8 },
+      { logCS: '0.90', contrastPct: 12.6 },
+      { logCS: '1.05', contrastPct: 8.9 },
+      { logCS: '1.20', contrastPct: 6.3 },
+      { logCS: '1.35', contrastPct: 4.5 },
+      { logCS: '1.50', contrastPct: 3.2 },
+      { logCS: '1.65', contrastPct: 2.2 },
+      { logCS: '1.80', contrastPct: 1.6 },
+      { logCS: '1.95', contrastPct: 1.1 }
+    ];
+
+    // =========================================================================
+    // 2. STATO APPLICATIVO
+    // =========================================================================
+    const state = {
+      activeTab: 'optotype',
+      mode: 'near',
+      charset: 'sloan',
+      pxPerMm: parseFloat(localStorage.getItem('optotype_px_per_mm')) || 3.78,
+      focalFactor: parseFloat(localStorage.getItem('optotype_focal_factor')) || 1.0,
+      cameraActive: false,
+      currentDistanceCm: null,
+      optotypeRows: [],
+      ishiharaIndex: 0,
+      ishiharaSeed: 42,
+      ishiharaShowKey: true,
+      rgMode: 'split',
+      rgAcuity: 'standard',
+      rgLetters: { red: [], green: [] },
+      prType: 'letters',
+      prTriplets: []
+    };
+
+    const MODE_SPECS = {
+      near: {
+        name: 'Vicina',
+        targetCm: 40,
+        minCm: 35,
+        maxCm: 45,
+        header: 'Distanza Vicina (40 cm)'
+      },
+      inter: {
+        name: 'Intermedia',
+        targetCm: 70,
+        minCm: 60,
+        maxCm: 80,
+        header: 'Distanza Intermedia (70 cm)'
+      }
+    };
+
+    // =========================================================================
+    // 3. GENERAZIONE SVG OTTOTIPO & CALCOLO ANGOLARE (5 PRIMI D'ARCO)
+    // =========================================================================
+    function createOptotypeSVG(glyphKey, sizePx, color = '#0a0a0a') {
+      const matrix = GLYPHS[glyphKey] || GLYPHS['E'];
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', '0 0 5 5');
+      svg.setAttribute('width', sizePx.toFixed(2));
+      svg.setAttribute('height', sizePx.toFixed(2));
+      svg.classList.add('optotype-svg');
+      svg.setAttribute('aria-hidden', 'true');
+
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          if (matrix[r][c] === 1) {
+            const rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('x', c);
+            rect.setAttribute('y', r);
+            rect.setAttribute('width', '1.02');
+            rect.setAttribute('height', '1.02');
+            rect.setAttribute('fill', color);
+            svg.appendChild(rect);
+          }
+        }
+      }
+      return svg;
+    }
+
+    function calculateOptotypeHeightPx(decimalAcuity, distanceCm) {
+      const fiveArcMinRad = (5 / 60) * (Math.PI / 180);
+      const distanceMm = distanceCm * 10;
+      const heightMm = (distanceMm * Math.tan(fiveArcMinRad)) / decimalAcuity;
+      return Math.max(2.5, heightMm * state.pxPerMm);
+    }
+
+    function pickRandomGlyphs(pool, count) {
+      const result = [];
+      let prev = null;
+      for (let i = 0; i < count; i++) {
+        const candidates = pool.length > 1 ? pool.filter(g => g !== prev) : pool;
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        result.push(chosen);
+        prev = chosen;
+      }
+      return result;
+    }
+
+    function generateOptotypeSequence() {
+      const pool = CHARSETS[state.charset] || CHARSETS.sloan;
+      state.optotypeRows = ACUITY_LEVELS.map(level => ({
+        ...level,
+        glyphs: pickRandomGlyphs(pool, level.count)
+      }));
+    }
+
+    function renderOptotypeChart() {
+      const container = document.getElementById('optotype-rows-container');
+      container.innerHTML = '';
+
+      const spec = MODE_SPECS[state.mode];
+
+      ACUITY_LEVELS.forEach((level, idx) => {
+        const rowData = state.optotypeRows[idx];
+        const letterHeightPx = calculateOptotypeHeightPx(level.dec, spec.targetCm);
+        const letterGapPx = Math.max(letterHeightPx * 0.85, 10);
+        const rowMarginBottomPx = Math.max(letterHeightPx * 0.75, 13);
+
+        const rowEl = document.createElement('div');
+        rowEl.className = 'relative flex w-full items-center justify-center';
+        rowEl.style.marginBottom = idx === ACUITY_LEVELS.length - 1 ? '0px' : `${rowMarginBottomPx.toFixed(1)}px`;
+
+        const leftTag = document.createElement('span');
+        leftTag.className = 'absolute left-0 text-[11px] font-semibold text-neutral-400 tabular-nums select-none';
+        leftTag.textContent = level.label;
+
+        const glyphsWrap = document.createElement('div');
+        glyphsWrap.className = 'flex items-center justify-center';
+        glyphsWrap.style.gap = `${letterGapPx.toFixed(1)}px`;
+
+        rowData.glyphs.forEach(gKey => {
+          glyphsWrap.appendChild(createOptotypeSVG(gKey, letterHeightPx));
+        });
+
+        const rightTag = document.createElement('span');
+        rightTag.className = 'hidden sm:inline absolute right-0 text-[10px] font-mono text-neutral-300 tabular-nums select-none';
+        rightTag.textContent = level.snellen;
+
+        rowEl.appendChild(leftTag);
+        rowEl.appendChild(glyphsWrap);
+        rowEl.appendChild(rightTag);
+        container.appendChild(rowEl);
+      });
+    }
+
+    // =========================================================================
+    // 4. GENERAZIONE TAVOLE DI ISHIHARA SU CANVAS
+    // =========================================================================
+    function createSeededRandom(seed) {
+      let s = seed % 2147483647;
+      if (s <= 0) s += 2147483646;
+      return function() {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
+      };
+    }
+
+    function renderIshiharaPlate() {
+      const canvas = document.getElementById('ishihara-canvas');
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const center = size / 2;
+      const plateRadius = size * 0.47;
+
+      const plate = ISHIHARA_PLATES[state.ishiharaIndex];
+      const rng = createSeededRandom(state.ishiharaSeed + plate.id * 97);
+
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = size;
+      maskCanvas.height = size;
+      const mctx = maskCanvas.getContext('2d');
+      mctx.fillStyle = '#000000';
+      mctx.fillRect(0, 0, size, size);
+      mctx.fillStyle = '#ffffff';
+      mctx.textAlign = 'center';
+      mctx.textBaseline = 'middle';
+      const fontSize = plate.number.length > 1 ? size * 0.42 : size * 0.52;
+      mctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      mctx.fillText(plate.number, center, center + size * 0.02);
+
+      const maskData = mctx.getImageData(0, 0, size, size).data;
+
+      ctx.clearRect(0, 0, size, size);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      const circles = [];
+      const radiiSteps = [13, 10.5, 8.5, 6.8, 5.2, 3.8];
+
+      for (const baseR of radiiSteps) {
+        const attempts = baseR > 8 ? 900 : 2200;
+        for (let i = 0; i < attempts; i++) {
+          const r = baseR * (0.85 + rng() * 0.3);
+          const angle = rng() * Math.PI * 2;
+          const dist = Math.sqrt(rng()) * (plateRadius - r - 2);
+          const x = center + Math.cos(angle) * dist;
+          const y = center + Math.sin(angle) * dist;
+
+          let overlaps = false;
+          for (let j = 0; j < circles.length; j++) {
+            const c = circles[j];
+            const dx = x - c.x;
+            const dy = y - c.y;
+            const minDist = r + c.r + 1.6;
+            if (dx * dx + dy * dy < minDist * minDist) {
+              overlaps = true;
+              break;
+            }
+          }
+          if (!overlaps) {
+            circles.push({ x, y, r });
+          }
+        }
+      }
+
+      circles.forEach(c => {
+        const px = Math.min(size - 1, Math.max(0, Math.round(c.x)));
+        const py = Math.min(size - 1, Math.max(0, Math.round(c.y)));
+        const idx = (py * size + px) * 4;
+        const isForeground = maskData[idx] > 128;
+
+        const palette = isForeground ? plate.fgColors : plate.bgColors;
+        const color = palette[Math.floor(rng() * palette.length)];
+
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      });
+
+      document.getElementById('ishihara-counter').textContent = `Tavola ${state.ishiharaIndex + 1} / ${ISHIHARA_PLATES.length}`;
+      document.getElementById('ishihara-plate-title').textContent = plate.title;
+      document.getElementById('ishihara-plate-answer').textContent = plate.number;
+      document.getElementById('ishihara-plate-notes').textContent = plate.notes;
+
+      const opCard = document.getElementById('ishihara-operator-card');
+      opCard.style.display = state.ishiharaShowKey ? 'block' : 'none';
+    }
+
+    // =========================================================================
+    // 5. GENERAZIONE TEST BICROMATICO ROSSO / VERDE
+    // =========================================================================
+    function generateRedGreenData() {
+      const pool = CHARSETS.sloan;
+      state.rgLetters = {
+        red: [
+          pickRandomGlyphs(pool, 3),
+          pickRandomGlyphs(pool, 4),
+          pickRandomGlyphs(pool, 4)
+        ],
+        green: [
+          pickRandomGlyphs(pool, 3),
+          pickRandomGlyphs(pool, 4),
+          pickRandomGlyphs(pool, 4)
+        ]
+      };
+    }
+
+    function renderRedGreenTest() {
+      const spec = MODE_SPECS[state.mode];
+      const board = document.getElementById('redgreen-board');
+      const panelRed = document.getElementById('rg-panel-red');
+      const panelGreen = document.getElementById('rg-panel-green');
+      const redRowsEl = document.getElementById('rg-red-rows');
+      const greenRowsEl = document.getElementById('rg-green-rows');
+
+      if (state.rgMode === 'split') {
+        board.className = 'grid w-full overflow-hidden rounded-2xl border border-neutral-300 shadow-xs grid-cols-1 md:grid-cols-2';
+        panelRed.classList.remove('hidden');
+        panelGreen.classList.remove('hidden');
+      } else if (state.rgMode === 'red') {
+        board.className = 'grid w-full overflow-hidden rounded-2xl border border-neutral-300 shadow-xs grid-cols-1';
+        panelRed.classList.remove('hidden');
+        panelGreen.classList.add('hidden');
+      } else {
+        board.className = 'grid w-full overflow-hidden rounded-2xl border border-neutral-300 shadow-xs grid-cols-1';
+        panelRed.classList.add('hidden');
+        panelGreen.classList.remove('hidden');
+      }
+
+      const scaleMap = {
+        low: [0.2, 0.3, 0.4],
+        standard: [0.5, 0.6, 0.8],
+        high: [0.8, 0.9, 1.0]
+      };
+      const decimals = scaleMap[state.rgAcuity] || scaleMap.standard;
+
+      function populateSide(container, rowsData) {
+        container.innerHTML = '';
+        decimals.forEach((dec, idx) => {
+          const hPx = Math.max(14, calculateOptotypeHeightPx(dec, spec.targetCm) * 1.15);
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'flex items-center justify-center';
+          rowDiv.style.gap = `${Math.max(hPx * 0.9, 16)}px`;
+
+          rowsData[idx].forEach(gKey => {
+            rowDiv.appendChild(createOptotypeSVG(gKey, hPx, '#080808'));
+          });
+          container.appendChild(rowDiv);
+        });
+      }
+
+      populateSide(redRowsEl, state.rgLetters.red);
+      populateSide(greenRowsEl, state.rgLetters.green);
+    }
+
+    // =========================================================================
+    // 6. GENERAZIONE TEST PELLI-ROBSON (SENSIBILITÀ AL CONTRASTO)
+    // =========================================================================
+    function generatePelliRobsonData() {
+      const pool = CHARSETS.sloan;
+      state.prTriplets = PELLI_ROBSON_LEVELS.map(lvl => ({
+        ...lvl,
+        letters: pickRandomGlyphs(pool, 3),
+        orientation: ['vertical', 'horizontal', 'diagonal'][Math.floor(Math.random() * 3)]
+      }));
+    }
+
+    function createGratingSVG(sizePx, contrastPct, orientation) {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', '0 0 60 60');
+      svg.setAttribute('width', sizePx.toFixed(1));
+      svg.setAttribute('height', sizePx.toFixed(1));
+      svg.classList.add('rounded-full', 'border', 'border-neutral-100');
+
+      const defs = document.createElementNS(svgNS, 'defs');
+      const gradId = `grating-${Math.random().toString(36).slice(2, 8)}`;
+      const grad = document.createElementNS(svgNS, 'linearGradient');
+      grad.setAttribute('id', gradId);
+      grad.setAttribute('x1', '0%');
+      grad.setAttribute('y1', '0%');
+      grad.setAttribute('x2', orientation === 'horizontal' ? '0%' : '100%');
+      grad.setAttribute('y2', orientation === 'vertical' ? '0%' : '100%');
+
+      const c = contrastPct / 100;
+      const darkVal = Math.round(255 * (1 - c));
+      const darkHex = `rgb(${darkVal},${darkVal},${darkVal})`;
+
+      const stripes = 10;
+      for (let i = 0; i <= stripes; i++) {
+        const stop = document.createElementNS(svgNS, 'stop');
+        stop.setAttribute('offset', `${(i / stripes) * 100}%`);
+        stop.setAttribute('stop-color', i % 2 === 0 ? '#ffffff' : darkHex);
+        grad.appendChild(stop);
+      }
+
+      defs.appendChild(grad);
+      svg.appendChild(defs);
+
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', '30');
+      circle.setAttribute('cy', '30');
+      circle.setAttribute('r', '29');
+      circle.setAttribute('fill', `url(#${gradId})`);
+      svg.appendChild(circle);
+
+      return svg;
+    }
+
+    function renderPelliRobsonTest() {
+      const container = document.getElementById('pellirobson-container');
+      container.innerHTML = '';
+
+      const spec = MODE_SPECS[state.mode];
+      const baseHeightPx = Math.min(48, Math.max(24, calculateOptotypeHeightPx(0.18, spec.targetCm)));
+
+      for (let i = 0; i < state.prTriplets.length; i += 2) {
+        const leftItem = state.prTriplets[i];
+        const rightItem = state.prTriplets[i + 1];
+
+        const rowEl = document.createElement('div');
+        rowEl.className = 'flex w-full items-center justify-between border-b border-neutral-100 pb-3.5 last:border-b-0';
+
+        const leftTag = document.createElement('span');
+        leftTag.className = 'w-20 text-[11px] font-mono text-neutral-400 tabular-nums select-none';
+        leftTag.textContent = `${leftItem.logCS} (${leftItem.contrastPct}%)`;
+
+        const centerPairs = document.createElement('div');
+        centerPairs.className = 'flex flex-wrap items-center justify-center gap-8 sm:gap-14';
+
+        [leftItem, rightItem].forEach(item => {
+          if (!item) return;
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'flex items-center gap-2.5';
+
+          if (state.prType === 'letters') {
+            const c = item.contrastPct / 100;
+            const lum = Math.round(255 * (1 - c));
+            const inkColor = `rgb(${lum}, ${lum}, ${lum})`;
+
+            item.letters.forEach(gKey => {
+              groupDiv.appendChild(createOptotypeSVG(gKey, baseHeightPx, inkColor));
+            });
+          } else {
+            groupDiv.appendChild(createGratingSVG(baseHeightPx * 1.45, item.contrastPct, item.orientation));
+          }
+          centerPairs.appendChild(groupDiv);
+        });
+
+        const rightTag = document.createElement('span');
+        rightTag.className = 'w-20 text-right text-[11px] font-mono text-neutral-400 tabular-nums select-none';
+        rightTag.textContent = rightItem ? `${rightItem.logCS} (${rightItem.contrastPct}%)` : '';
+
+        rowEl.appendChild(leftTag);
+        rowEl.appendChild(centerPairs);
+        rowEl.appendChild(rightTag);
+        container.appendChild(rowEl);
+      }
+    }
+
+    // =========================================================================
+    // 7. RENDERING UNIFICATO & GESTIONE TAB
+    // =========================================================================
+    function renderActiveView() {
+      const spec = MODE_SPECS[state.mode];
+      const titleEl = document.getElementById('chart-title-label');
+      const subtitleEl = document.getElementById('chart-subtitle-label');
+
+      ['optotype', 'ishihara', 'redgreen', 'pellirobson'].forEach(tab => {
+        document.getElementById(`view-${tab}`).classList.toggle('hidden', state.activeTab !== tab);
+        document.getElementById(`view-${tab}`).classList.toggle('flex', state.activeTab === tab && tab !== 'optotype');
+        document.getElementById(`subbar-${tab}`).classList.toggle('hidden', state.activeTab !== tab);
+        document.getElementById(`subbar-${tab}`).classList.toggle('flex', state.activeTab === tab);
+      });
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === state.activeTab;
+        btn.className = isActive
+          ? 'tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition bg-neutral-950 text-white shadow-xs'
+          : 'tab-btn min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950';
+      });
+
+      if (state.activeTab === 'optotype') {
+        titleEl.textContent = `Ottotipo Sloan — ${spec.header}`;
+        subtitleEl.textContent = `Scala Decimale 1/10 – 10/10 • 5 primi d'arco`;
+        renderOptotypeChart();
+      } else if (state.activeTab === 'ishihara') {
+        titleEl.textContent = `Tavole Pseudoisocromatiche di Ishihara — ${spec.header}`;
+        subtitleEl.textContent = `Screening Discromatopsie Rosso-Verde • Tavola ${state.ishiharaIndex + 1} di ${ISHIHARA_PLATES.length}`;
+        renderIshiharaPlate();
+      } else if (state.activeTab === 'redgreen') {
+        titleEl.textContent = `Test Bicromatico Rosso / Verde — ${spec.header}`;
+        subtitleEl.textContent = `Bilanciamento Rifrattivo • Aberrazione Cromatica`;
+        renderRedGreenTest();
+      } else if (state.activeTab === 'pellirobson') {
+        titleEl.textContent = `Sensibilità al Contrasto (Pelli-Robson) — ${spec.header}`;
+        subtitleEl.textContent = `Scala Logaritmica 0.30 – 1.95 LogCS`;
+        renderPelliRobsonTest();
+      }
+
+      if (state.currentDistanceCm !== null) {
+        updateDistanceBadge(state.currentDistanceCm);
+      }
+    }
+
+    // =========================================================================
+    // 8. CALIBRAZIONE SCHERMO (85.6 mm)
+    // =========================================================================
+    const calSlider = document.getElementById('calibration-slider');
+    const cardRef = document.getElementById('credit-card-ref');
+    const pxMmReadout = document.getElementById('px-per-mm-readout');
+
+    function applyCalibration(pxPerMm) {
+      state.pxPerMm = pxPerMm;
+      localStorage.setItem('optotype_px_per_mm', pxPerMm.toFixed(3));
+      calSlider.value = pxPerMm.toFixed(2);
+      pxMmReadout.textContent = `${pxPerMm.toFixed(2)} px/mm`;
+      cardRef.style.width = `${(85.6 * pxPerMm).toFixed(1)}px`;
+      renderActiveView();
+    }
+
+    calSlider.addEventListener('input', (e) => {
+      applyCalibration(parseFloat(e.target.value));
+    });
+
+    document.getElementById('btn-reset-calibration').addEventListener('click', () => {
+      applyCalibration(3.78);
+    });
+
+    // =========================================================================
+    // 9. TELEMETRIA FOTOCAMERA FRONTALE & FALLBACK RILEVAMENTO VOLTO/OCCHI
+    // =========================================================================
+    let videoStream = null;
+    let trackingRaf = null;
+    let faceDetector = null;
+    let lastRawRatio = null;
+    let smoothedDistanceCm = null;
+
+    const procCanvas = document.createElement('canvas');
+    procCanvas.width = 160;
+    procCanvas.height = 120;
+    const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+
+    const videoEl = document.getElementById('webcam-video');
+    const overlayCanvas = document.getElementById('face-overlay-canvas');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const distLabel = document.getElementById('distance-label');
+    const distDot = document.getElementById('distance-dot');
+    const distZoneTag = document.getElementById('distance-zone-tag');
+    const camBtnText = document.getElementById('camera-btn-text');
+    const camEngineStatus = document.getElementById('camera-engine-status');
+    const diagBox = document.getElementById('camera-diagnostic-box');
+
+    function showCameraDiagnostic(message) {
+      if (!message) {
+        diagBox.classList.add('hidden');
+        diagBox.textContent = '';
+        return;
+      }
+      diagBox.textContent = message;
+      diagBox.classList.remove('hidden');
+      document.getElementById('calibration-drawer').classList.remove('hidden');
+    }
+
+    function updateDistanceBadge(cm) {
+      state.currentDistanceCm = cm;
+      const spec = MODE_SPECS[state.mode];
+
+      const quickSlider = document.getElementById('quick-dist-slider');
+      const quickVal = document.getElementById('quick-manual-val');
+      if (quickSlider && quickVal) {
+        quickSlider.value = Math.round(cm);
+        quickVal.textContent = `${Math.round(cm)} cm`;
+      }
+
+      if (cm === null || isNaN(cm)) {
+        distLabel.textContent = 'Distanza: -- cm';
+        distDot.className = 'h-2.5 w-2.5 rounded-full bg-neutral-300';
+        distZoneTag.classList.add('hidden');
+        return;
+      }
+
+      const rounded = Math.round(cm);
+      distLabel.textContent = `${rounded} cm`;
+      distZoneTag.classList.remove('hidden');
+
+      if (rounded >= spec.minCm && rounded <= spec.maxCm) {
+        distDot.className = 'h-2.5 w-2.5 rounded-full bg-emerald-500';
+        distZoneTag.textContent = 'Ottimale';
+        distZoneTag.className = 'rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700';
+      } else if (rounded < spec.minCm) {
+        distDot.className = 'h-2.5 w-2.5 rounded-full bg-amber-500';
+        distZoneTag.textContent = 'Troppo vicino';
+        distZoneTag.className = 'rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700';
+      } else {
+        distDot.className = 'h-2.5 w-2.5 rounded-full bg-amber-500';
+        distZoneTag.textContent = 'Troppo lontano';
+        distZoneTag.className = 'rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700';
+      }
+    }
+
+    function detectFaceFallbackCanvas(video) {
+      const w = procCanvas.width;
+      const h = procCanvas.height;
+      procCtx.drawImage(video, 0, 0, w, h);
+      const frame = procCtx.getImageData(0, 0, w, h).data;
+
+      let sumX = 0, sumY = 0, count = 0;
+      let minX = w, maxX = 0, minY = h, maxY = 0;
+
+      for (let y = 10; y < h - 10; y += 2) {
+        for (let x = 16; x < w - 16; x += 2) {
+          const i = (y * w + x) * 4;
+          const r = frame[i], g = frame[i + 1], b = frame[i + 2];
+
+          const isSkin = (r > 75 && g > 35 && b > 20 &&
+            r > g && r > b &&
+            Math.abs(r - g) > 10 &&
+            (Math.max(r, g, b) - Math.min(r, g, b)) > 12);
+
+          if (isSkin) {
+            sumX += x;
+            sumY += y;
+            count++;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (count < 45) return null;
+
+      const cx = sumX / count;
+      const cy = sumY / count;
+
+      let sx = 0, sy = 0;
+      for (let y = minY; y <= maxY; y += 2) {
+        for (let x = minX; x <= maxX; x += 2) {
+          const i = (y * w + x) * 4;
+          const r = frame[i], g = frame[i + 1], b = frame[i + 2];
+          if (r > 75 && g > 35 && b > 20 && r > g && r > b && Math.abs(r - g) > 10) {
+            sx += (x - cx) * (x - cx);
+            sy += (y - cy) * (y - cy);
+          }
+        }
+      }
+
+      const stdX = Math.sqrt(sx / count);
+      const stdY = Math.sqrt(sy / count);
+      const estWidth = Math.min(w * 0.85, Math.max(18, stdX * 3.5));
+      const estHeight = Math.min(h * 0.90, Math.max(22, stdY * 3.8));
+
+      return {
+        x: Math.max(0, cx - estWidth / 2),
+        y: Math.max(0, cy - estHeight / 2),
+        width: estWidth,
+        height: estHeight,
+        frameW: w,
+        frameH: h
+      };
+    }
+
+    async function startCamera() {
+      showCameraDiagnostic(null);
+
+      if (!window.isSecureContext && window.location.protocol !== 'file:') {
+        showCameraDiagnostic('La fotocamera richiede una connessione sicura HTTPS. Puoi comunque usare il regolatore manuale "± cm" in alto a destra.');
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showCameraDiagnostic('Accesso fotocamera non disponibile in questo browser/contesto (es. file locale). Usa il cursore manuale "± cm" in alto a destra.');
+        return;
+      }
+
+      camBtnText.textContent = 'Avvio...';
+
+      const constraintsChain = [
+        { video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: 'user' }, audio: false },
+        { video: true, audio: false }
+      ];
+
+      let stream = null;
+      let lastError = null;
+
+      for (const constraints of constraintsChain) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (stream) break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      if (!stream) {
+        camBtnText.textContent = 'Attiva Camera';
+        camEngineStatus.textContent = 'Errore';
+        const errName = lastError && lastError.name ? lastError.name : '';
+        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+          showCameraDiagnostic('Permesso fotocamera negato. Abilita la fotocamera nelle impostazioni del sito su Chrome/iPadOS e riprova.');
+        } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+          showCameraDiagnostic('Nessuna fotocamera rilevata sul dispositivo. Usa il regolatore manuale "± cm".');
+        } else {
+          showCameraDiagnostic(`Impossibile avviare la fotocamera (${errName || 'bloccata dal contesto'}). Usa il cursore manuale "± cm" in alto a destra.`);
+        }
+        return;
+      }
+
+      try {
+        videoStream = stream;
+        videoEl.srcObject = videoStream;
+        videoEl.setAttribute('playsinline', '');
+        videoEl.muted = true;
+        await videoEl.play();
+
+        document.getElementById('video-placeholder').classList.add('hidden');
+        state.cameraActive = true;
+        camBtnText.textContent = 'Spegni Camera';
+
+        if ('FaceDetector' in window) {
+          try {
+            faceDetector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+            camEngineStatus.textContent = 'Attiva (AI nativa)';
+          } catch (e) {
+            faceDetector = null;
+            camEngineStatus.textContent = 'Attiva (Rilevamento ottico)';
+          }
+        } else {
+          faceDetector = null;
+          camEngineStatus.textContent = 'Attiva (Rilevamento ottico)';
+        }
+
+        const detectLoop = async () => {
+          if (!state.cameraActive) return;
+
+          if (videoEl.readyState >= 2 && videoEl.videoWidth > 0) {
+            overlayCanvas.width = videoEl.videoWidth;
+            overlayCanvas.height = videoEl.videoHeight;
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            let box = null;
+
+            if (faceDetector) {
+              try {
+                const faces = await faceDetector.detect(videoEl);
+                if (faces && faces.length > 0) {
+                  const b = faces[0].boundingBox;
+                  box = {
+                    x: b.x,
+                    y: b.y,
+                    width: b.width,
+                    height: b.height,
+                    frameW: videoEl.videoWidth,
+                    frameH: videoEl.videoHeight
+                  };
+                }
+              } catch (e) {
+                faceDetector = null;
+                camEngineStatus.textContent = 'Attiva (Rilevamento ottico)';
+              }
+            }
+
+            if (!box) {
+              const fb = detectFaceFallbackCanvas(videoEl);
+              if (fb) {
+                const scaleX = videoEl.videoWidth / fb.frameW;
+                const scaleY = videoEl.videoHeight / fb.frameH;
+                box = {
+                  x: fb.x * scaleX,
+                  y: fb.y * scaleY,
+                  width: fb.width * scaleX,
+                  height: fb.height * scaleY,
+                  frameW: videoEl.videoWidth,
+                  frameH: videoEl.videoHeight
+                };
+              }
+            }
+
+            if (box && box.width > 0) {
+              overlayCtx.strokeStyle = '#10b981';
+              overlayCtx.lineWidth = Math.max(2, overlayCanvas.width / 160);
+              overlayCtx.strokeRect(box.x, box.y, box.width, box.height);
+
+              const ratio = box.width / box.frameW;
+              lastRawRatio = ratio;
+              const rawCm = (12.8 / ratio) * state.focalFactor;
+
+              if (smoothedDistanceCm === null) {
+                smoothedDistanceCm = rawCm;
+              } else {
+                smoothedDistanceCm = smoothedDistanceCm * 0.78 + rawCm * 0.22;
+              }
+
+              const clampedCm = Math.min(180, Math.max(15, smoothedDistanceCm));
+              updateDistanceBadge(clampedCm);
+            }
+          }
+
+          trackingRaf = requestAnimationFrame(detectLoop);
+        };
+
+        detectLoop();
+      } catch (err) {
+        stopCamera();
+        showCameraDiagnostic('Errore durante la riproduzione dello stream video. Puoi regolare i centimetri manualmente con "± cm".');
+      }
+    }
+
+    function stopCamera() {
+      state.cameraActive = false;
+      smoothedDistanceCm = null;
+      if (trackingRaf) cancelAnimationFrame(trackingRaf);
+      if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
+        videoStream = null;
+      }
+      videoEl.srcObject = null;
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      document.getElementById('video-placeholder').classList.remove('hidden');
+      camBtnText.textContent = 'Attiva Camera';
+      camEngineStatus.textContent = 'Spenta';
+    }
+
+    document.getElementById('btn-camera-toggle').addEventListener('click', () => {
+      if (state.cameraActive) stopCamera();
+      else startCamera();
+    });
+
+    const focalSlider = document.getElementById('focal-slider');
+    const focalFactorVal = document.getElementById('focal-factor-val');
+    focalSlider.value = state.focalFactor.toFixed(2);
+    focalFactorVal.textContent = `${state.focalFactor.toFixed(2)}×`;
+
+    focalSlider.addEventListener('input', (e) => {
+      state.focalFactor = parseFloat(e.target.value);
+      localStorage.setItem('optotype_focal_factor', state.focalFactor.toFixed(3));
+      focalFactorVal.textContent = `${state.focalFactor.toFixed(2)}×`;
+    });
+
+    document.getElementById('btn-snap-reference').addEventListener('click', () => {
+      if (!lastRawRatio) {
+        showCameraDiagnostic('Inquadra prima un volto con la fotocamera attiva per calibrare la focale.');
+        return;
+      }
+      const targetCm = MODE_SPECS[state.mode].targetCm;
+      const newFactor = (targetCm * lastRawRatio) / 12.8;
+      state.focalFactor = Math.min(1.45, Math.max(0.65, newFactor));
+      localStorage.setItem('optotype_focal_factor', state.focalFactor.toFixed(3));
+      focalSlider.value = state.focalFactor.toFixed(2);
+      focalFactorVal.textContent = `${state.focalFactor.toFixed(2)}×`;
+      smoothedDistanceCm = targetCm;
+      updateDistanceBadge(targetCm);
+    });
+
+    // Controllo rapido manuale distanza
+    const quickManualToggle = document.getElementById('quick-manual-toggle');
+    const quickManualPopover = document.getElementById('quick-manual-popover');
+    const quickDistSlider = document.getElementById('quick-dist-slider');
+
+    quickManualToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickManualPopover.classList.toggle('hidden');
+      if (!quickManualPopover.classList.contains('hidden') && state.currentDistanceCm === null) {
+        updateDistanceBadge(MODE_SPECS[state.mode].targetCm);
+      }
+    });
+
+    quickDistSlider.addEventListener('input', (e) => {
+      updateDistanceBadge(parseInt(e.target.value, 10));
+    });
+
+    document.getElementById('quick-dist-minus').addEventListener('click', () => {
+      const cur = state.currentDistanceCm || MODE_SPECS[state.mode].targetCm;
+      updateDistanceBadge(Math.max(25, cur - 5));
+    });
+
+    document.getElementById('quick-dist-plus').addEventListener('click', () => {
+      const cur = state.currentDistanceCm || MODE_SPECS[state.mode].targetCm;
+      updateDistanceBadge(Math.min(120, cur + 5));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!quickManualPopover.contains(e.target) && e.target !== quickManualToggle) {
+        quickManualPopover.classList.add('hidden');
+      }
+    });
+
+    // =========================================================================
+    // 10. EVENTI UI OPERATORE & MODALITÀ PULITA
+    // =========================================================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeTab = btn.dataset.tab;
+        renderActiveView();
+      });
+    });
+
+    const btnNear = document.getElementById('btn-mode-near');
+    const btnInter = document.getElementById('btn-mode-inter');
+
+    function setDistanceMode(mode) {
+      state.mode = mode;
+      if (mode === 'near') {
+        btnNear.className = 'min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition bg-neutral-950 text-white shadow-xs';
+        btnInter.className = 'min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950';
+      } else {
+        btnInter.className = 'min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition bg-neutral-950 text-white shadow-xs';
+        btnNear.className = 'min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold transition text-neutral-600 hover:text-neutral-950';
+      }
+      renderActiveView();
+    }
+
+    btnNear.addEventListener('click', () => setDistanceMode('near'));
+    btnInter.addEventListener('click', () => setDistanceMode('inter'));
+
+    document.querySelectorAll('.charset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.charset = btn.dataset.charset;
+        document.querySelectorAll('.charset-btn').forEach(b => {
+          const active = b.dataset.charset === state.charset;
+          b.className = active
+            ? 'charset-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white'
+            : 'charset-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950';
+        });
+        generateOptotypeSequence();
+        renderOptotypeChart();
+      });
+    });
+
+    document.getElementById('btn-regenerate-optotype').addEventListener('click', () => {
+      generateOptotypeSequence();
+      renderOptotypeChart();
+    });
+
+    document.getElementById('ishihara-prev').addEventListener('click', () => {
+      state.ishiharaIndex = (state.ishiharaIndex - 1 + ISHIHARA_PLATES.length) % ISHIHARA_PLATES.length;
+      renderActiveView();
+    });
+
+    document.getElementById('ishihara-next').addEventListener('click', () => {
+      state.ishiharaIndex = (state.ishiharaIndex + 1) % ISHIHARA_PLATES.length;
+      renderActiveView();
+    });
+
+    document.getElementById('ishihara-reshuffle').addEventListener('click', () => {
+      state.ishiharaSeed += 137;
+      renderIshiharaPlate();
+    });
+
+    document.getElementById('ishihara-show-key').addEventListener('change', (e) => {
+      state.ishiharaShowKey = e.target.checked;
+      renderIshiharaPlate();
+    });
+
+    document.querySelectorAll('.rg-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.rgMode = btn.dataset.rgmode;
+        document.querySelectorAll('.rg-mode-btn').forEach(b => {
+          const active = b.dataset.rgmode === state.rgMode;
+          b.className = active
+            ? 'rg-mode-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white'
+            : 'rg-mode-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950';
+        });
+        renderRedGreenTest();
+      });
+    });
+
+    document.getElementById('rg-acuity-select').addEventListener('change', (e) => {
+      state.rgAcuity = e.target.value;
+      renderRedGreenTest();
+    });
+
+    document.getElementById('rg-regenerate').addEventListener('click', () => {
+      generateRedGreenData();
+      renderRedGreenTest();
+    });
+
+    document.querySelectorAll('.pr-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.prType = btn.dataset.prtype;
+        document.querySelectorAll('.pr-type-btn').forEach(b => {
+          const active = b.dataset.prtype === state.prType;
+          b.className = active
+            ? 'pr-type-btn min-h-[34px] rounded px-2.5 py-1 font-semibold bg-neutral-900 text-white'
+            : 'pr-type-btn min-h-[34px] rounded px-2.5 py-1 font-medium text-neutral-600 hover:text-neutral-950';
+        });
+        renderPelliRobsonTest();
+      });
+    });
+
+    document.getElementById('pr-regenerate').addEventListener('click', () => {
+      generatePelliRobsonData();
+      renderPelliRobsonTest();
+    });
+
+    const calDrawer = document.getElementById('calibration-drawer');
+    document.getElementById('btn-calibrate-toggle').addEventListener('click', () => {
+      calDrawer.classList.toggle('hidden');
+    });
+
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    let lastTouchEnd = 0;
+
+    function preventAccidentalZoom(e) {
+      if (!document.body.classList.contains('clean-mode-active')) return;
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }
+
+    function preventDoubleTapZoom(e) {
+      if (!document.body.classList.contains('clean-mode-active')) return;
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }
+
+    document.addEventListener('touchmove', preventAccidentalZoom, { passive: false });
+    document.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+
+    document.getElementById('btn-clean-mode').addEventListener('click', () => {
+      document.body.classList.add('clean-mode-active');
+      calDrawer.classList.add('hidden');
+      quickManualPopover.classList.add('hidden');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+    });
+
+    document.getElementById('clean-exit-btn').addEventListener('click', () => {
+      document.body.classList.remove('clean-mode-active');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('clean-mode-active')) {
+        document.body.classList.remove('clean-mode-active');
+        if (viewportMeta) {
+          viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+        }
+      }
+      if (state.activeTab === 'ishihara') {
+        if (e.key === 'ArrowRight') {
+          state.ishiharaIndex = (state.ishiharaIndex + 1) % ISHIHARA_PLATES.length;
+          renderActiveView();
+        } else if (e.key === 'ArrowLeft') {
+          state.ishiharaIndex = (state.ishiharaIndex - 1 + ISHIHARA_PLATES.length) % ISHIHARA_PLATES.length;
+          renderActiveView();
+        }
+      }
+    });
+
+    // =========================================================================
+    // 11. INIZIALIZZAZIONE
+    // =========================================================================
+    generateOptotypeSequence();
+    generateRedGreenData();
+    generatePelliRobsonData();
+    applyCalibration(state.pxPerMm);
+  </script>
+</body>
+</html>
